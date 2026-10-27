@@ -2,82 +2,70 @@
 
 基于 Ubuntu Linux，逐步实现 PICO 4 Ultra 驱动 MuJoCo 仿真机械臂的学习与实验项目。
 
-> 当前阶段：基础仿真与逆运动学学习。尚未完成 PICO 数据接入和完整遥操作闭环。
-> 本次归档日期：2026-10-27。进度根据此前项目交流整理，未重新检查 Ubuntu 电脑或运行原始程序。
+**当前阶段：基础仿真与解析逆运动学。PICO 数据接入与完整遥操作闭环尚未完成。**
 
-## 已有成果
+## 已归档代码
 
-| 模块 | 当前进度 | 归档说明 |
+代码从用户提供的「项目技术路线」分享对话中提取；2026-10-27 完成整理。保留历史命名，统一把相互依赖的实验脚本和模型放在 models/。
+
+| 文件 | 作用 | 状态 |
 | --- | --- | --- |
-| Ubuntu 环境 | 已安装并进入系统 | 系统具体版本待补充 |
-| MuJoCo 环境 | 已安装、启动并加载模型 | 此前交流记录版本为 3.1.7，待补充环境导出 |
-| 入门机械臂模型 | 已完成双关节模型加载 | 模型名 my_first_robot；原始 robot.xml 待上传 |
-| Python 控制 | 已开展自动控制与键盘控制实验 | 原始脚本与运行录像待上传 |
-| Viewer 操作 | 已排查按键引起的显示变化 | WASD 等实验按键与查看器快捷键冲突，需避免重复绑定 |
-| 解析逆运动学 | 已学习二连杆解析解，开展示例实验 | 原始 ik_control.py 待上传和复核 |
-| 雅可比与数值 IK | 已进入学习阶段 | 已讨论 DLS 示例；尚无可归档的运行验证结果 |
-| PICO 接入 | 待完成 | 尚未验证设备数据传输 |
-| 完整遥操作 | 待完成 | 坐标映射、六自由度 IK 与系统联调待开展 |
+| [models/robot.xml](models/robot.xml) | 双关节机械臂、位置执行器、末端 site | 按原对话修正 site 层级 |
+| [models/control.py](models/control.py) | 两关节正弦/余弦自动运动 | 按原对话修正模型路径 |
+| [models/slider_control.py](models/slider_control.py) | 较慢的自动轨迹 | 历史名称；实际没有滑块 |
+| [models/keyboard_control.py](models/keyboard_control.py) | WASD 调整关节目标角度 | 保留实验原版；与 Viewer 快捷键存在冲突 |
+| [models/ik_control.py](models/ik_control.py) | 当前 yaw/pitch 两关节模型的解析 IK | 固定可达目标，不是通用六轴 IK |
+| [models/ik_slider.py](models/ik_slider.py) | Tkinter 关节角滑块 | 控制关节角，不是末端坐标 IK |
+| [reference/pico_receiver.py](reference/pico_receiver.py) | UDP JSON 接收教学示例 | 未验证 PICO 实机联通 |
+| [reference/ControllerReader.cs](reference/ControllerReader.cs) | Unity XR 手柄位姿读取示例 | 只输出日志，没有发送 UDP |
+| [archive/historical-code.md](archive/historical-code.md) | 初始模型、历史控制代码和修改片段 | 原文归档，含已知问题 |
+| [examples/launch_viewer.py](examples/launch_viewer.py) | 早期查看器启动片段 | 在 models 目录运行或自行提供 robot.xml |
 
-## 当前归档范围
+## 在已有 Ubuntu 环境中运行
 
-仓库已保存项目说明、阶段记录与后续任务，并从历史对话检索结果恢复了 [模型启动片段](examples/launch_viewer.py)。完整 robot.xml 和控制/IK 脚本尚未恢复，因此仓库目前不能独立运行仿真实验。
+使用之前已安装 MuJoCo 的 Python 环境。从仓库根目录选择一项运行：
 
-代码来源、已定位文件与恢复限制见 [历史代码恢复记录](docs/code-recovery.md)。
+```bash
+python models/control.py
+python models/slider_control.py
+python models/ik_control.py
+python models/ik_slider.py
+```
 
-文档中的文件名来自此前学习记录，不代表这些文件已经上传。后续导入原始文件时保留其实际实现，不以新生成的示例替代已有成果。
+一次运行一个脚本。VS Code 也可以打开相应文件，选择已安装 MuJoCo 的 Python 解释器后运行。
 
-## 已有模型概况
+依赖：MuJoCo；ik_control.py 还保留原文中的 NumPy 导入；滑块程序需要 Python 的 tkinter 和桌面图形环境。此前环境记录为 MuJoCo 3.1.7，完整版本锁定尚未取得。
 
-此前实验使用的 robot.xml：
+为保留原实现，脚本未增加额外的 GUI 生命周期处理。运行 ik_slider.py 时建议先关闭 MuJoCo 窗口；先关闭 Tkinter 面板可能使 root.update() 报错。
 
-- 模型名：my_first_robot。
-- 连杆：link1、link2。
-- 关节：两个 hinge 转动关节。
-- 控制：位置执行器。
-- 末端标记：end_effector site。
+## 当前成果与限制
 
-连杆尺寸、关节轴向、控制增益和关节限位以实际 XML 为准，当前不根据片段补写参数。
+- 已安装并进入 Ubuntu；此前已启动 MuJoCo、加载机械臂模型。
+- 已开展自动控制和键盘控制实验；键盘与 Viewer 快捷键冲突已记录。
+- 已提供与当前机械臂结构匹配的解析 IK 示例，正在学习雅可比与数值 IK。
+- 分享对话没有 jacobian_ik.py 或 ik_test.py，待取得对应「学习运动步骤」对话后归档。
+- 关节 1 绕 Z 轴、关节 2 绕 Y 轴，不能套用普通共面双连杆公式。
+- 位置执行器控制受重力、接触与增益影响；几何 IK 精确不代表仿真末端零误差。
+- reference/ 中两个教学片段尚未组成完整采集通信系统；接收器的超时分支只打印提示，并不实际停止机器人。
 
-## 目标技术流程
+## 本次验证
 
-PICO 位姿采集 → Ubuntu 接收 → 坐标系转换与初始位姿标定 → 机械臂末端目标 → 逆运动学 → 关节目标 → MuJoCo 仿真反馈。
+6 个 Python 文件通过语法解析；XML 通过结构检查，末端 site 位于 link2 内；解析 IK 固定目标经对应正运动学回代，计算误差为 0.0（浮点结果）。
 
-这条流程是项目目标，并非已经全部实现。
+当前整理环境没有 MuJoCo，未重新运行物理仿真、桌面窗口或 Unity/PICO 实机测试。不能把静态检查当成完整运行验证。
 
-## 后续任务
+详细来源、改动和验证范围见 [代码恢复记录](docs/code-recovery.md)。
 
-1. 归档并复现现有 robot.xml、控制脚本及启动命令。
-2. 用正运动学回代检查二连杆解析 IK，记录目标点与末端误差。
-3. 验证雅可比与阻尼最小二乘数值 IK，检查收敛、不可达目标和关节限位。
-4. 在 Ubuntu 端稳定接收 PICO 4 Ultra 位姿及按键数据，明确采用手柄还是手部追踪。
-5. 完成坐标轴方向、单位、旋转表示、初始位姿与运动比例的标定。
-6. 接入目标机械臂模型，加入失联暂停、关节限位及速度限制，再进行完整遥操作联调。
+## 后续计划
 
-## 建议后续目录
+1. 在原 Ubuntu 环境运行归档代码，保存截图、录像、环境版本和末端误差。
+2. 归档并验证雅可比与阻尼最小二乘 IK 示例。
+3. 验证 PICO 位姿采集与 Ubuntu 数据接收。
+4. 完成坐标系转换、初始位姿标定与运动比例设置。
+5. 接入目标机械臂，加入关节限位、速度限制和失联暂停，完成遥操作联调。
 
-| 路径 | 内容 |
-| --- | --- |
-| models/ | 实际使用的 MuJoCo XML 模型 |
-| examples/ | 自动控制、键盘控制、解析 IK 与数值 IK 实验 |
-| docs/ | 环境说明、实验记录、问题排查 |
-| media/ | 运行截图和演示视频 |
-| requirements.txt | 根据实际运行环境确认的 Python 依赖 |
-
-以上是后续组织约定，未添加占位程序或未经验证的依赖版本。
+目标流程：PICO 位姿 → Ubuntu 接收 → 坐标映射与标定 → 末端目标 → IK → 关节控制 → MuJoCo 反馈。
 
 ## 参考项目
 
-- [qqsq12321/vr_teleop](https://github.com/qqsq12321/vr_teleop)：此前用于了解 VR 输入、逆运动学与仿真遥操作的参考仓库。
-
-本仓库目前未复制该项目源码；后续采用第三方代码时需记录来源并遵守其许可证。
-
-## 下一次成果归档
-
-优先补充：
-
-- 原始 robot.xml 与实际运行的 Python 文件。
-- Ubuntu、Python、MuJoCo 的版本信息。
-- 可复现的运行命令。
-- 一段模型自动运动录像。
-- 解析 IK / 数值 IK 的输入、输出和末端误差记录。
+[qqsq12321/vr_teleop](https://github.com/qqsq12321/vr_teleop) 是此前学习参考，本次未复制其源码。采用第三方代码时应记录来源并遵守其许可证。
